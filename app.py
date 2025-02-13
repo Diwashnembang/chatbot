@@ -11,6 +11,7 @@ import concurrent.futures
 response = {
     'hi':"hello there",
 }
+users = {}
 
 load_dotenv()
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
@@ -22,8 +23,12 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 @socketio.on('connect',namespace="/chat")
 def handle_connect():
-    print('Connected to the server',helper.get_time())
-    emit('response', helper.sendResponse(True, 'HI! I am a chatbot. How can I help you today?'))
+    user = request.args.get('user_id')
+    if not users.get(user):
+        emit('response', helper.sendResponse(True, 'HI! I am a chatbot. How can I help you today?'))
+        users[user] = True
+        print(f"{user} to the server on ",helper.get_time())
+        return 
     
 @socketio.on('chat',namespace="/chat")
 def handle_chat(data):
@@ -49,6 +54,12 @@ def handle_chat(data):
     except Exception as e:
         emit('response', helper.sendResponse(False, str(e)))
         disconnect()
-
+@socketio.on('disconnect',namespace="/chat")
+def handledissconnect():
+    user = request.args.get('user_id')
+    if users.get(user):
+        users.pop(user)
+        print(f"{user} disconnected from the server on ",helper.get_time())
+        return
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=8001)
