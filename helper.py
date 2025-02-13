@@ -23,8 +23,7 @@ def loadResponsesFromDB(conn,redis):
     cur.execute('SELECT * FROM faq;')
     rows = cur.fetchall()
     for row in rows:
-        redis.set([row[1]] , row[2])
-
+        redis.set(row[1], row[2])  # Remove the list brackets around row[1]
 
 
 def writeResponseToDB(conn,question,answer):
