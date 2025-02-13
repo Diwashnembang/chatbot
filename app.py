@@ -2,10 +2,12 @@ from flask import Flask, request
 from openai import OpenAI
 from flask_socketio import SocketIO, emit, disconnect
 import os
+import json
 import helper
 import db
 from dotenv import load_dotenv
 import concurrent.futures
+import redis
 
 
 response = {
@@ -20,13 +22,15 @@ app = Flask(__name__)
 conn = db.createDBConection()
 helper.loadResponsesFromDB(conn,response)
 socketio = SocketIO(app, cors_allowed_origins="*")
+# Set up the Redis client
+redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
 
 @socketio.on('connect',namespace="/chat")
 def handle_connect():
     user = request.args.get('user_id')
-    if not users.get(user):
+    if not redis_client.get(user):
         emit('response', helper.sendResponse(True, 'HI! I am a chatbot. How can I help you today?'))
-        users[user] = True
+        redis_client.set(user, 'connected')
         print(f"{user} to the server on ",helper.get_time())
         return 
     
@@ -38,16 +42,18 @@ def handle_chat(data):
             return
         
         message = data.get('text')
+        print("this is the message",message)
         if not message:
             emit('response', helper.sendResponse(False, 'empty message'))
             return
             
-        if response.get(message):
+        if redis_client.get(message):
             emit('response', helper.sendResponse(True, response[message]))
             return
         else:
+            print("used openai")
             completion = helper.sendOpenAi(client, message)
-            response[message] = completion
+            redis_client.set(message, completion)
             with concurrent.futures.ThreadPoolExecutor() as executor:
                 executor.submit(helper.writeResponseToDB, conn, message, completion)
             emit('response', helper.sendResponse(True, completion))
@@ -55,10 +61,10 @@ def handle_chat(data):
         emit('response', helper.sendResponse(False, str(e)))
         disconnect()
 @socketio.on('disconnect',namespace="/chat")
-def handledissconnect():
+def handle_disconnect():
     user = request.args.get('user_id')
-    if users.get(user):
-        users.pop(user)
+    if user is not None:
+        redis_client.delete(user)
         print(f"{user} disconnected from the server on ",helper.get_time())
         return
 if __name__ == '__main__':
