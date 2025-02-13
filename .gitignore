@@ -1,0 +1,27 @@
+# Byte-compiled / cached files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+.env
+*.env
+.env.local
+.env.*.local
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs and database files
+*.log
+*.sqlite3
+instance/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
