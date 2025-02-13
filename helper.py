@@ -18,12 +18,12 @@ def sendResponse(type, message):
         return { "success": True, "message": message}
     
 
-def loadResponsesFromDB(conn,responses):
+def loadResponsesFromDB(conn,redis):
     cur = conn.cursor()
     cur.execute('SELECT * FROM faq;')
     rows = cur.fetchall()
     for row in rows:
-        responses[row[1]] = row[2]
+        redis.set([row[1]] , row[2])
 
 
 

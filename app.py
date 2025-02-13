@@ -20,10 +20,10 @@ client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 print(os.getenv)
 app = Flask(__name__)
 conn = db.createDBConection()
-helper.loadResponsesFromDB(conn,response)
 socketio = SocketIO(app, cors_allowed_origins="*")
 # Set up the Redis client
 redis_client = redis.StrictRedis(host='localhost', port=6379, db=0)
+helper.loadResponsesFromDB(conn,redis_client)
 
 @socketio.on('connect',namespace="/chat")
 def handle_connect():
