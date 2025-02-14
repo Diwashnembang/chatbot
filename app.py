@@ -46,9 +46,11 @@ def handle_chat(data):
         if not message:
             emit('response', helper.sendResponse(False, 'empty message'))
             return
-            
-        if redis_client.get(message):
-            emit('response', helper.sendResponse(True, response[message]))
+
+        cached_value = redis_client.get(message)   
+        if cached_value:
+            cached_value = cached_value.decode('utf-8')
+            emit('response', helper.sendResponse(True,cached_value))
             return
         else:
             print("used openai")
@@ -58,8 +60,9 @@ def handle_chat(data):
                 executor.submit(helper.writeResponseToDB, conn, message, completion)
             emit('response', helper.sendResponse(True, completion))
     except Exception as e:
-        emit('response', helper.sendResponse(False, str(e)))
-        disconnect()
+        emit('response', helper.sendResponse(False, "I am unable to answer right now"))
+        print("execption occured",e)
+
 @socketio.on('disconnect',namespace="/chat")
 def handle_disconnect():
     user = request.args.get('user_id')
